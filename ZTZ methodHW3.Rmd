@@ -1,0 +1,182 @@
+---
+title: "ZTZ method"
+author: "Xiaoxia Champon"
+date: "9/16/2021"
+output: html_document
+---
+---
+title: 'ST758 Homework 3'
+author: "Xiaoxia Champon"
+date: "9/8/2021"
+output: pdf_document
+---
+I have neither given nor received  unauthorized aid on this test for assignment. Xiaoxia Champon
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(BBmisc)
+library(wordspace)
+library(matlib)
+```
+survey for the project is completed.
+Question 2-5 is on paper and uploaded in another PDF document.
+1.
+quick sort
+```{r}
+set.seed(123)
+quicksort <- function(x){#find pivot position for a number
+  n = length(x)
+  if(n<=1){
+    return(x)
+  }
+  index  <- sample(seq(1,n,1),1)  #randomly choose a number
+  
+  #put the number in the beginning of the sequence
+  if(index==n){
+    neworder <- c(n, 1:(n-1))
+    x <- x[neworder] 
+  } else if(index>1){
+      neworder <- c(index,1:(index-1),(index+1):n) 
+      x <- x[neworder]
+  }
+  
+  i=1
+  for(j in 1:(n-1)){
+    if (x[j+1] < x[1]){
+      xi1 <- x[i+1]
+      xj1 <- x[j+1]
+      x[i+1] <- xj1
+      x[j+1] <- xi1
+      i = i+1   #update i by 1
+    }
+  }
+  #swap x[1] and x[i]
+  x1 <- x[1]
+  xi <- x[i]
+  x[1] <- xi
+  x[i] <- x1
+  
+  if(i==1){
+    low.half = x[1]
+    high.half = quicksort(x[2:n])
+    return(c(low.half, high.half))
+  } else if (i==n){
+    low.half = quicksort(x[1:(n-1)])
+    high.half = x[n]
+    return(c(low.half, high.half))
+  } else{
+    low.half = quicksort(x[1:(i-1)])
+    high.half = quicksort(x[(i+1):n])
+    return(c(low.half, x[i], high.half))
+  }
+  
+   #returns list of vector x with element i in right place
+  
+}
+```
+try different n
+```{r, echo=FALSE}
+set.seed(123)
+for(n in c(1000, 5000, 10000, 20000)){
+  timex = numeric(20)
+  timey = numeric(20)
+  timez = numeric(20)
+  
+  for(i in 1:20){
+    x = seq(1,n,1)
+    y = seq(n,1,-1)
+    z = sample(seq(1,n,1), replace=FALSE)
+  
+    tx = proc.time()[3]
+    storage = quicksort(x)
+    timex[i] = as.numeric(proc.time()[3]-tx)
+    
+    ty = proc.time()[3]
+    storage = quicksort(y)
+    timey[i] = as.numeric(proc.time()[3]-ty)
+    
+    tz = proc.time()[3]
+    storage = quicksort(z)
+    timez[i] = as.numeric(proc.time()[3]-tz)
+  }
+  
+  print(paste("The mean sorting time for x at n=", n, "is", round(mean(timex),3)))
+  print(paste("The mean sorting time for y at n=", n, "is", round(mean(timey),3)))
+  print(paste("The mean sorting time for z at n=", n, "is", round(mean(timez),3)))
+  print("")
+
+  
+}
+
+```
+      | $n=1000$ | $n=5000$ | $n=10000$ | $n=20000$
+------|----------|----------|-----------|-----------
+$x$   | 0.026    | 0.117    | 0.238     | 0.49
+$y$   | 0.023    | 0.120    | 0.237     | 0.489
+$z$   | 0.023    | 0.120    | 0.238     | 0.489
+It takes almost the same amout of the time. The three way of sorting are the same order. \newline\newline
+
+6 simulation:The relationship between minimum singular value and maximum VIF is not true for the original data but it's true for the unit length data.
+```{r}
+set.seed(123)
+eigenmin=c(1)
+maxvif=c(1)
+eigenminu=c(1)
+maxvifu=c(1)
+index = 1
+
+for (p in 3:5){
+
+for (m in 1:1000){
+  
+  for (n in seq(15,200,by=5)){
+    for (gam in seq(0,0.95,by=0.05)){
+      
+      w=matrix(rnorm(n*p,mean=10,sd=100), nrow=n, byrow=T)
+      x=matrix(0,n,p)
+      x[,1]=c(rep(1,n))
+      unitx=matrix(0,n,p)
+      unitx[,1]=c(rep(1,n))
+  
+      for ( i in 2:p){
+      x[,i]=sqrt(1-gam^2)*w[,i]+gam*w[,p]
+      
+      }
+      stx=scale(x[,-1],center=TRUE,scale=TRUE)
+      z=stx/sqrt(n)
+      VIF=max(diag(solve(t(z)%*%z)))
+      
+      unitx=normalize.cols(x,method ="euclidean" )
+      stu=scale(unitx[,-1],center=TRUE,scale=TRUE)
+      zu=stu/sqrt(n)
+      VIFU=max(diag(solve(t(zu)%*%zu)))
+     
+      
+      eigenmin[index]=min(eigen(t(x)%*%x)$values)
+      maxvif[index]=VIF
+  
+      eigenminu[index]=min(eigen(t(unitx)%*%unitx)$values)
+      maxvifu[index]=VIFU
+      index = index + 1
+      
+    }
+    }
+  
+
+}
+plot(maxvif,eigenmin,xlab="Maximum VIF", ylab="Minimum eigenvalue",main=bquote("Original data"),xlim=c(0, max(maxvif)+10), ylim=c(-1,max(eigenmin)+10 ))
+abline(v=10)
+abline(h=0.1)
+
+plot(maxvifu,eigenminu,xlab="Maximum VIF", ylab="Minimum eigenvalue",main="Unit Length data",xlim=c(0, max(maxvifu)+1), ylim=c(-1,max(eigenminu)+1 ))
+abline(v=10)
+abline(h=0.1)
+  
+}
+```
+
+
+
